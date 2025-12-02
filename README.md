@@ -2,17 +2,9 @@
 
 本仓库包含一个前后端分离的农业产品交易与服务平台实训项目。
 
-## 目录结构
-
-```bash
-.
-├── RongXiaoTong/   # 后端：Spring Boot 项目
-└── sale/           # 前端：Vue3 + Vite 项目
-
 ## 技术栈
 
 后端：Spring Boot、MyBatis、Spring Security、JWT 等
-
 前端：Vue3、Vite、Vue Router、Vuex / Pinia（按实际情况改）、Tailwind CSS 等
 
 本地运行
@@ -38,3 +30,11 @@ npm run dev
 默认开发地址一般为：
 
 http://localhost:5173/
+
+## 目录结构
+
+```bash
+.
+├── RongXiaoTong/   # 后端：Spring Boot 项目
+└── sale/           # 前端：Vue3 + Vite 项目
+

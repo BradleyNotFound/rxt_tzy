@@ -5,7 +5,7 @@
 ## 技术栈
 
 后端：Spring Boot、MyBatis、Spring Security、JWT 等
-前端：Vue3、Vite、Vue Router、Vuex / Pinia（按实际情况改）、Tailwind CSS 等
+前端：Vue3、Vite、Vue Router、Vuex / Pinia、Tailwind CSS 等
 
 本地运行
 1. 启动后端（RongXiaoTong）

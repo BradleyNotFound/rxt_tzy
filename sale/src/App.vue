@@ -1,10 +1,34 @@
 <template>
-  <!-- 整个应用的外层容器 -->
   <div id="app">
     <!-- 路由页面 -->
     <router-view />
 
-    <!-- 夜间模式切换按钮（固定在右下角） -->
+    <!-- 返回顶部 -->
+    <BackToTop />
+
+    <!-- 字体大小调节按钮 -->
+    <div class="font-size-switch">
+      <button
+        :class="{ active: fontSizeLevel === 'small' }"
+        @click="setFontSize('small')"
+      >
+        A-
+      </button>
+      <button
+        :class="{ active: fontSizeLevel === 'medium' }"
+        @click="setFontSize('medium')"
+      >
+        A
+      </button>
+      <button
+        :class="{ active: fontSizeLevel === 'large' }"
+        @click="setFontSize('large')"
+      >
+        A+
+      </button>
+    </div>
+
+    <!-- 夜间模式按钮 -->
     <div class="theme-switch">
       <input type="checkbox" id="theme-checkbox" v-model="isDark" />
       <label for="theme-checkbox" class="switch-label">
@@ -17,26 +41,39 @@
 </template>
 
 <script>
+import BackToTop from "./components/BackToTop.vue";
+
 export default {
+  components: { BackToTop },
+
   data() {
     return {
       isDark: false,
+      fontSizeLevel: "medium", // small / medium / large
     };
   },
 
   mounted() {
-    // 离开页面时清空 LocalStorage（你原来的逻辑）
+    // 清空 localStorage
     window.onbeforeunload = function () {
-      const storage = window.localStorage;
-      storage.clear();
+      localStorage.clear();
     };
 
-    // 页面加载时恢复夜间模式
+    // 恢复夜间模式
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark") {
       this.isDark = true;
       document.body.classList.add("dark-mode");
     }
+
+    // 恢复字体大小档位
+    const savedSize = localStorage.getItem("fontSizeLevel");
+    if (["small", "medium", "large"].includes(savedSize)) {
+      this.fontSizeLevel = savedSize;
+    }
+
+    // 应用字体缩放
+    this.applyFontSize();
   },
 
   watch: {
@@ -49,29 +86,149 @@ export default {
         localStorage.setItem("theme", "light");
       }
     },
+
+    fontSizeLevel() {
+      this.applyFontSize();
+      localStorage.setItem("fontSizeLevel", this.fontSizeLevel);
+    },
+  },
+
+  methods: {
+    setFontSize(level) {
+      this.fontSizeLevel = level;
+    },
+
+    // ★ 真正改变字体大小（不缩放网页，只改文字）
+    applyFontSize() {
+      document.documentElement.setAttribute(
+        "data-font-size",
+        this.fontSizeLevel
+      );
+    },
   },
 };
 </script>
 
 <style lang="less">
-/* 你的原始样式 */
-#app {
-  height: 100%;
-  background: #ffffff;
-  width: 100%;
+
+/* ============================
+   真正控制全站字体大小
+   ⭐⭐ 关键：适配所有 px/rem/Tailwind 字体 ⭐⭐
+============================ */
+html {
+  --font-base: 1;
+  --font-adjust: 100%;
 }
 
-/* 整个首页在夜间变黑 */
-body.dark-mode .home-page {
+/* 小号字体：稍微小一点 */
+html[data-font-size="small"] {
+  --font-base: 0.95;
+  --font-adjust: 98%;
+}
+
+/* 默认 */
+html[data-font-size="medium"] {
+  --font-base: 1;
+  --font-adjust: 100%;
+}
+
+/* 大号字体：只放大一点点，不挤爆布局 */
+html[data-font-size="large"] {
+  --font-base: 1.08;
+  --font-adjust: 104%;
+}
+
+
+
+/* ⭐ 核心：真正让所有文字变大或变小 ⭐
+   不改变图片、不改变布局、不缩放元素
+*/
+/* ===============================
+   字体缩放（不会覆盖颜色/背景）
+================================= */
+
+/* 全局文字缩放逻辑，只控制文字大小，不覆盖颜色 */
+body,
+body * {
+  font-size: calc(var(--font-base) * 1em) !important;
+  font-size-adjust: var(--font-adjust);
+}
+
+/* ⭐ 夜间模式保护层：重新把夜间模式的颜色盖回来 */
+body.dark-mode,
+body.dark-mode * {
+  color: #f5f5f5 !important;
+  text-shadow: 0 0 6px rgba(0,255,200,0.5);
+}
+
+/* 夜间模式下 bg-white 要变暗 */
+body.dark-mode .bg-white {
+  background-color: #121212 !important;
+}
+
+body.dark-mode header {
+  background-color: #181818 !important;
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode main,
+body.dark-mode section {
   background-color: #121212 !important;
 }
 
 
+/* ============================
+   布局
+============================ */
+#app {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+}
 
+/* ============================
+   字体调节按钮
+============================ */
+.font-size-switch {
+  position: fixed;
+  right: 20px;
+  bottom: 880px;
+  display: flex;
+  gap: 6px;
+  z-index: 9999;
+}
 
+.font-size-switch button {
+  padding: 3px 6px;
+  min-width: 32px;
+  font-size: 12px;
+  border-radius: 50px;
+  border: 1px solid rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.9);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
 
-/* ===================== 夜间模式按钮样式 ===================== */
+.font-size-switch button.active {
+  background: #007029;
+  color: white;
+  box-shadow: 0 0 8px rgba(0,120,40,0.8);
+}
 
+body.dark-mode .font-size-switch button {
+  background: rgba(0,0,0,0.5);
+  color: #ddd;
+  border-color: rgba(255,255,255,0.3);
+}
+
+body.dark-mode .font-size-switch button.active {
+  background: #29ffb5;
+  color: #000;
+}
+
+/* ============================
+   夜间模式按钮
+============================ */
 .theme-switch {
   position: fixed;
   right: 20px;
@@ -86,128 +243,57 @@ body.dark-mode .home-page {
 .switch-label {
   width: 60px;
   height: 30px;
-  background: linear-gradient(45deg, #ffd27d, #ffb347);
   border-radius: 30px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.3s ease;
+  background: linear-gradient(45deg,#ffd27d,#ffb347);
   display: flex;
   align-items: center;
   padding: 0 6px;
-}
-
-.switch-label .sun,
-.switch-label .moon {
-  font-size: 16px;
+  position: relative;
+  cursor: pointer;
 }
 
 .switch-label .ball {
   width: 26px;
   height: 26px;
-  background: #ffffff;
+  background: #fff;
   border-radius: 50%;
   position: absolute;
-  top: 2px;
   left: 2px;
-  transition: transform 0.35s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  top: 2px;
+  transition: transform 0.3s ease;
+}
+
+input:checked + .switch-label {
+  background: linear-gradient(45deg,#5a78ff,#1d1f38);
 }
 
 input:checked + .switch-label .ball {
   transform: translateX(30px);
 }
 
-input:checked + .switch-label {
-  background: linear-gradient(45deg, #5a78ff, #1d1f38);
-}
-
-/* ===================== 全局主题（亮/暗） ===================== */
-
-body {
-  background: #ffffff;
-  color: #333333;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
+/* ============================
+   夜间模式 & 发光
+============================ */
 body.dark-mode {
   background: #121212;
-  color: #eeeeee;
+  color: #f5f5f5;
 }
 
-/* 让 #app 配合变黑 */
-body.dark-mode #app {
-  background-color: #121212;
-  color: #eeeeee;
-}
-
-/* ===================== ★★★★★ Tailwind 背景强制覆盖 ★★★★★ */
-
-/* 所有 bg-white 的元素在夜间模式下全部变黑 */
-body.dark-mode .bg-white {
-  background-color: #121212 !important;
-  color: #eeeeee !important;
-}
-
-/* min-h-screen 是你的页面最大容器，也要变黑 */
-body.dark-mode .min-h-screen {
-  background-color: #121212 !important;
-}
-
-/* header 通常使用 bg-white，我们额外调深一点 */
-body.dark-mode header {
-  background-color: #181818 !important;
-  color: #eeeeee !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-/* footer 的绿色保持，只调亮文字 */
-body.dark-mode footer {
+body.dark-mode * {
   color: #f5f5f5 !important;
+  text-shadow: 0 0 6px rgba(0,255,200,0.6);
 }
 
-/* 让所有页面的 main 区域在夜间变暗 */
-body.dark-mode main {
-  background-color: #121212 !important;
+/* 灯光柔光效果 */
+body.dark-mode::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background:
+    radial-gradient(circle at 1% 99%,rgba(255,230,180,0.55),transparent 11%),
+    radial-gradient(circle at 98% 4%,rgba(255,240,200,0.40),transparent 9%);
 }
-
-/* 保险起见，把 section 也一起调暗（不会影响上面那张大图） */
-body.dark-mode section {
-  background-color: #121212 !important;
-}
-
-/* 夜间模式：让常见文字都变亮 */
-body.dark-mode,
-body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode h3,
-body.dark-mode h4,
-body.dark-mode p,
-body.dark-mode span,
-body.dark-mode a,
-body.dark-mode li,
-body.dark-mode div {
-  color: #f5f5f5 !important;
-}
-
-/* 覆盖 Tailwind 里那些偏灰的文字颜色 */
-body.dark-mode .text-gray-500,
-body.dark-mode .text-gray-600,
-body.dark-mode .text-gray-700,
-body.dark-mode .text-gray-800 {
-  color: #f5f5f5 !important;
-}
-/* 夜间模式下：更明显的发光效果（淡绿色霓虹） */
-body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode h3,
-body.dark-mode p,
-body.dark-mode span,
-body.dark-mode a {
-  text-shadow:
-    0 0 4px rgba(0, 255, 200, 0.9),
-    0 0 10px rgba(0, 200, 150, 0.7);
-}
-
-
 
 </style>
